@@ -1420,20 +1420,20 @@ h6 {
 h1 {
   margin-top: 0;
   margin-bottom: 10px;
-  font-size: 26px;
+  font-size: 36px;
 }
 
 h2 {
   margin-top: 0;
   margin-bottom: 10px;
-  font-size: 22px;
+  font-size: 28px;
   color: #333;
 }
 
 h3 {
   margin-top: 0;
   margin-bottom: 10px;
-  font-size: 18px;
+  font-size: 22px;
   color: #666;
 }
 
@@ -1458,6 +1458,18 @@ h6 {
   color: #666;
 }
 
+a {
+	text-decoration: none;
+}
+
+a:visited {
+	color: #551a8b
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
 .sidebar {
 	width: 40px;
 	height:100%;
@@ -1474,6 +1486,11 @@ h6 {
 }
 
 .section {
+	padding: 5px 0;
+	margin: 10px 0;
+}
+
+.section .project {
 	padding: 5px 0;
 	margin: 10px 0;
 }
@@ -1503,4 +1520,16 @@ h6 {
 .sidebar ul.message {
 	position: absolute;
 	bottom:25px;
+}
+
+.text-muted {
+  color: #999999;
+}
+
+.footer {
+	margin: 40px 0 5px 0;
+}
+
+.footer p {
+	font-size:14px;
 }
