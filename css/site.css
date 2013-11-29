@@ -1414,6 +1414,10 @@ ul, ol {
   margin-bottom: 10px;
 }
 
+em {
+  font-style: italic;
+}
+
 h1,
 h2,
 h3,
