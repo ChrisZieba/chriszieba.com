@@ -267,9 +267,12 @@ a:hover {
   width: 225px;
   height:100%;
   padding:20px;
-  background-color: #001F3F;
-  color:#FFFFFF;
+  background-color: #ededed;
+  color:#393939;
   position: fixed;
+  border-width: 0 1px 0 0;
+  border-style: solid;
+  border-color: #cacaca;
 
 }
 
@@ -279,19 +282,14 @@ a:hover {
 .sidebar h4,
 .sidebar h5
 .sidebar h6 {
-  color: #FFF;
+  color: #000000;
 }
 
-.sidebar a,
 .sidebar a:visited {
-  color: #FFF;
+  color: #000;
   text-decoration: none;
 }
 
-.sidebar a:hover {
-  color: #7FDBFF;
-  text-decoration: none;
-}
 
 .content a,
 .content a:visited {
@@ -329,6 +327,13 @@ a:hover {
 .sidebar ul.links li a {
   font-size: 13px;
   text-decoration: none;
+  color: #FFF;
+
+}
+
+.sidebar ul.links li a:hover {
+  text-decoration: none;
+  color: #ddd;
 }
 
 .content ul.links {
@@ -342,9 +347,26 @@ a:hover {
   margin-right:2px;
 }
 
-.bg-lin-col {
+.bg-lin-twitter {
   color: #0074D9;
 }
+
+.bg-lin-facebook {
+  color: #4c66a4;
+}
+
+.bg-lin-googleplus {
+  color: #D34836;
+}
+
+.bg-lin-linkedin {
+  color: #03659A;
+}
+
+.bg-lin-github {
+  color: #000000;
+}
+
 .content ul.links li a {
   text-decoration: none;
 }
@@ -368,6 +390,7 @@ a:hover {
     width: auto;
     height:auto;
     position: static;
+    border-width: 0 0 1px 0;
   }
 
   .content {
