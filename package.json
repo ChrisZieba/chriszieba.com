@@ -1,0 +1,7 @@
+{
+  "name": "chriszieba.com",
+  "devDependencies": {
+    "html-minifier": "latest",
+    "webpack": "latest"
+  }
+}
