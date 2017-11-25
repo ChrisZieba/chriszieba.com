@@ -1,1 +1,289 @@
-blackjack-probabilities
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Blackjack Probabilities</title>
+    <meta name="description" content="Blackjack Probabilities">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="site.css">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <script src="Game.js"></script>
+    <script src="Probability.js"></script>
+    <script src="Utils.js"></script>
+    <script src="site.js"></script>
+
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+<body>
+
+<div id="header" class="outer">
+    <div class="container inner">
+        <a id="forkme" href="https://github.com/ChrisZieba/blackjack">View on GitHub</a>
+        <div class="row">
+            <div class="col-md-12">
+                
+                <h1 class="project-title">Blackjack Probabilities</h1>
+                <p class="post">Posted <time>March 30 2015</time> by <a href="http://chriszieba.com" title="Chris Zieba">Chris Zieba</a></p>
+
+                <iframe src="https://ghbtns.com/github-btn.html?user=ChrisZieba&repo=blackjack&type=star&count=true&size=small" frameborder="0" scrolling="0" width="170px" height="25px"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="row">
+        <div class="col-md-12">
+            
+            <p>The calculations for <a href="http://en.wikipedia.org/wiki/Blackjack">blackjack</a> probabilities can become lengthy even for the simplest cases. If a player chooses to stand it is a simpler problem since only the dealer is drawing cards. Even in this simple case there are <span class="score">289</span> distinct possible outcomes. The values quoted are for a single deck where the dealer stands on a soft <span class="score">17</span>.</p>
+
+            <p>After the initial deal, the dealer is showing a <span class="score">10</span> and the player has <span class="score">6</span><span class="score">8</span> for a total score of <span class="score">14</span>. If the player stands (unwisely) and the first card the dealer pulls from the shoe is a <span class="score">10</span>, the dealer now has a score of <span class="score">20</span>. At this point a showdown occurs since the dealer has a score between <span class="score">17</span> and <span class="score">21</span>. The probability of that event occurring is <span class="score"><sup>1</sup>/<sub>49</sub>​</span>, since there are <span class="score">49</span> cards left in the shoe after the dealer and player were both dealt cards. The dealer has a higher score (without busting) than the player, so the house wins the showdown. This event will contribute to the loss probability of the player, <span class="score"><sup>1</sup>/<sub>49</sub>​</span>, which works out to roughly <span class="score">0.02</span>. Since there are fourteen other <span class="score">10</span>'s in the shoe, the total probability for this event is <span class="score"><sup>15</sup>/<sub>49</sub>​</span></span>, which is about <span class="score">0.31</span>.</p>
+
+            <p>The probability for every event needs to be accounted for in this manner, so we reset the dealer hand and calculate the probability of the next showdown. If the next card in the shoe is a <span class="score">5</span>, the probability of this event is <span class="score"><sup>4</sup>/<sub>49</sub>​</span></span> since there are four <span class="score">5</span>'s in the shoe. The dealer must draw another card, which is a <span class="score">10</span>, and busts. The probability of drawing the <span class="score">10</span> was <span class="score"><sup>15</sup>/<sub>48</sub>​</span></span> because the dealer has the other <span class="score">10</span>. Since these events are independent they are multiplied together to get the final probability for this event, which is <span class="score"><sup>60</sup>/<sub>2352</sub>​</span></span>. If we continue to calculate the probabilities for every possible event we would get a total approximate stand probability of <span class="score">0.213</span>, <span class="score">0.787</span> and <span class="score">0.000</span> for a player win, loss, and push, respectively.</p>
+        </div>
+
+
+
+        <div class="col-md-12">
+            <div class="well">
+                <div class="row">
+                    <div class="col-md-6">
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <span class="label label-default">Dealer</span>
+                                <div id="dealer-cards">
+                                    <div class="card">
+                                        <div class="suit">♥</div>
+                                        <div class="rank">10</div>
+                                    </div>
+                                    
+
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <span class="label label-default">Player</span>
+                                <div id="player-cards">
+                                    <div class="card">
+                                        <div class="suit">♦</div>
+                                        <div class="rank">6</div>
+                                    </div>
+                                    <div class="card">
+                                        <div class="suit">♣</div>
+                                        <div class="rank">8</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+<!--                         <div class="row">
+                            <div class="col-md-12">
+                                <div id="player-options"></div>
+                            </div>
+                        </div>
+ -->
+
+                        <div class="row">
+                            <div class="col-md-12 ">
+
+
+
+                                <form class="options">
+                                    <div class="form-group">
+                                        <span class="light">Decks</span>
+                                        <select>
+                                            <option value="1">1</option>
+                                            <option value="2" disabled="disabled">2</option>
+                                            <option value="3" disabled="disabled">3</option>
+                                            <option value="4" disabled="disabled">4</option>
+                                            <option value="5" disabled="disabled">5</option>
+                                            <option value="6" disabled="disabled">6</option>
+                                            <option value="7" disabled="disabled">7</option>
+                                            <option value="8" disabled="disabled">8</option>
+                                        </select>
+                                    </div>
+                                </form>
+
+                                <div class="alert alert-info">
+                                    <p class="small"><span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> Calculating blackjack probabilities involves a lot of recursive computation. <strong>These calculations are done client side in the browser via JavaScript.</strong> In some cases it might take up to 15 seconds to calculate the final results. You can speed up the process by decreasing the accuracy, and/or limiting the actions in which probabilities are calculated for.</p>
+                                    <button id="deal" class="btn-deal btn-block btn-primary" autocomplete="false" data-loading-text="Calculating...">Deal</button>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div id="probability-container" class="probabilities">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="panel panel-default">
+                                        <div class="panel-heading">
+                                            <div class="checkbox">
+                                                <label>
+                                                    <input name="standProbability" type="checkbox" checked="checked"> Stand
+                                                </label>
+                                            </div>
+                                            <div class="select pull-right">
+                                                <p>Accuracy
+                                                    <select name="standAccuracy">
+                                                        <option value="1">1</option>
+                                                        <option value="2">2</option>
+                                                        <option value="3" selected="selected">3</option>
+                                                        <option value="4">4</option>
+                                                        <option value="5">5</option>
+                                                    </select>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="panel-body">
+                                            <p>Showdowns: <span id="probabilities-stand-total-hands" class="badge code">76,323</span></p>
+
+                                            <div class="table-responsive">
+                                            <table class="table table-condensed table-bordered">
+                                                <thead>
+                                                    <th>Win</th>
+                                                    <th>Lose</th>
+                                                    <th>Push</th>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                    <td><div id="probabilities-stand-win" class="code">0.213</div></td>
+                                                    <td><div id="probabilities-stand-lose" class="code">0.787</div></td>
+                                                    <td><div id="probabilities-stand-push" class="code">0.000</div></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="panel panel-default">
+                                        <div class="panel-heading">
+                                            <div class="checkbox">
+                                                <label>
+                                                    <input name="hitProbability" type="checkbox"> Hit
+                                                </label>
+                                            </div>
+                                            <div class="select pull-right">
+                                                <p>Accuracy 
+                                                    <select name="hitAccuracy">
+                                                        <option value="1">1</option>
+                                                        <option value="2">2</option>
+                                                        <option value="3" selected="selected">3</option>
+                                                        <option value="4">4</option>
+                                                        <option value="5">5</option>
+                                                    </select>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="panel-body">
+                                            <p>Showdowns: <span id="probabilities-hit-total-hands" class="badge code">1,844,848</span></p>
+
+                                            <div class="table-responsive">
+                                            <table class="table table-condensed table-bordered">
+                                                <thead>
+                                                    <th>Win</th>
+                                                    <th>Lose</th>
+                                                    <th>Push</th>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                    <td><div id="probabilities-hit-win" class="code">0.214</div></td>
+                                                    <td><div id="probabilities-hit-lose" class="code">0.717</div></td>
+                                                    <td><div id="probabilities-hit-push" class="code">0.069</div></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="panel panel-default">
+                                        <div class="panel-heading">
+                                            <div class="checkbox">
+                                                <label>
+                                                    <input name="doubleProbability" type="checkbox"> Double
+                                                </label>
+                                            </div>
+                                            <div class="select pull-right">
+                                                <p>Accuracy 
+                                                    <select name="doubleAccuracy">
+                                                        <option value="1">1</option>
+                                                        <option value="2">2</option>
+                                                        <option value="3" selected="selected">3</option>
+                                                        <option value="4">4</option>
+                                                        <option value="5">5</option>
+                                                    </select>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="panel-body">
+                                            <p>Showdowns: <span id="probabilities-double-total-hands" class="badge code">891,300</span></p>
+                                            
+
+                                            <div class="table-responsive">
+                                            <table class="table table-condensed table-bordered">
+                                                <thead>
+                                                    <th>Win</th>
+                                                    <th>Lose</th>
+                                                    <th>Push</th>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                    <td><div id="probabilities-double-win" class="code">0.216</div></td>
+                                                    <td><div id="probabilities-double-lose" class="code">0.726</div></td>
+                                                    <td><div id="probabilities-double-push" class="code">0.058</div></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-12">
+
+
+
+
+        </div>
+
+    </div>
+
+</div>
+
+<script type="text/javascript">
+    var sc_project=9447020; 
+    var sc_invisible=1; 
+    var sc_security="3ecc64a0"; 
+    var scJsHost = (("https:" == document.location.protocol) ? "https://secure." : "http://www.");
+    document.write("<sc"+"ript type='text/javascript' src='"+scJsHost+"statcounter.com/counter/counter.js'></"+"script>");
+</script>
+</body>
+</html>
