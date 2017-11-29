@@ -13,7 +13,8 @@ fs.readFile('index.html', 'utf8', (err, html) => {
     conservativeCollapse: true
   });
 
-  fs.writeFile('build/index.html', result, 'utf8', () => {
-    console.log('Done');
+  let indexLocation = 'build/index.html';
+  fs.writeFile(indexLocation, result, 'utf8', () => {
+    console.log(`Minified index.html and placed in ${indexLocation}`);
   });
 });

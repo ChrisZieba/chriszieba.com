@@ -1,7 +1,4 @@
 $(document).ready(function() {
-
-
-
 	var player = "Player";
 	var dealer = "Dealer";
 	var options = {
@@ -13,28 +10,12 @@ $(document).ready(function() {
 		var game = new Blackjack.Game(player, dealer, options);
 		game.deal();
 
-		
-		
+    setTimeout(function () {
+        runProbabilties(game);
+        resetTable(game);
+        btn.button('reset');
+    }, 1000)
 
-
-    
-
-        setTimeout(function () {
-            runProbabilties(game);
-            resetTable(game);
-            btn.button('reset');
-        }, 1000)
-		// calcuklate the odds
-		
-		//console.log(btn.button('reset'));
-		//btn.button('reset');
-
-	});
-
-	$(".action").click(function() {
-		// var game = new game(4);
-		// game.deal();
-		// resetTable(game);
 	});
 
 	function runProbabilties(game) {
@@ -70,9 +51,7 @@ $(document).ready(function() {
 		}
 	}
 
-
 	function resetTable(game) {
-
 		$("#dealer-cards").html(getCards(game.getDealer()));
 		$("#player-cards").html(getCards(game.getPlayer()));
 
@@ -104,6 +83,4 @@ $(document).ready(function() {
 	function formatNumber(num) {
 		return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
 	}
-
 });
-
