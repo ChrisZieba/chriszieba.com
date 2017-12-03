@@ -1,0 +1,232 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>WebAssembly, Web Workers, and Texas Holdem</title>
+  <meta name="description" content="WebAssembly, Web Workers, and Texas Holdem">
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+
+  <style type="text/css">
+    body {
+      color: #222;
+      font-family: Helvetica,Arial,serif;
+    }
+
+    time {
+      font-weight: 400;
+      font-style: italic;
+    }
+
+    #header {
+      background: #212121;
+      background: -moz-linear-gradient(top, #373737, #212121);
+      background: -webkit-linear-gradient(top, #373737, #212121);
+      background: -ms-linear-gradient(top, #373737, #212121);
+      background: -o-linear-gradient(top, #373737, #212121);
+      background: linear-gradient(top, #373737, #212121);
+      width: 100%;
+      margin-bottom: 15px;
+    }
+
+    #header .inner {
+      padding-top: 50px;
+      padding-bottom: 30px;
+      position: relative;
+    }
+
+    h1.project-title {
+      margin: 0;
+      color: #FFF;
+      font-size: 36px;
+      font-weight: 700;
+      text-shadow: #111 0px 0px 10px;
+    }
+
+    .post {
+      color: #999;
+    }
+
+    pre {
+      display: block;
+      color: #FFF;
+      background-color: #28323f;
+      padding: 14px;
+      -webkit-text-size-adjust: none;
+      line-height: 1.4;
+    }
+    code {
+      display: block;
+      font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+    }
+
+
+  </style>
+</head>
+<body>
+
+<div id="header" class="outer">
+  <div class="container inner">
+    <div class="row">
+      <div class="col-md-12">
+        <h1 class="project-title">WebAssembly, Web Workers, and Texas Holdem</h1>
+        <p class="post">Posted <time>November 27 2017</time> by <a href="http://chriszieba.com" title="Chris Zieba">Chris Zieba</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+      
+      <p>I recently spent a weekend to learn more about an exciting new web technology called WebAssebly, and built a <a href="http://chriszieba.com/2017/11/26/holdem">hand simulator for texas holdem</a>. I wanted to document what it's like working with WebAssembly, and walk through a project from start to finish.</p>
+
+      <h2>Basics</h2>
+
+      <p><strong>WebAssembly</strong> is a new binary format for executing code on the web, allowing for much faster execution times in some cases. As of right now, you can port code written in <span>C</span> and <span>C++</span> to run inside a current web browser. If you're not familiar with the concepts of WebAssembly, I would start <a href="https://developer.mozilla.org/en-US/docs/WebAssembly">here</a> for excellent resources.</p>
+
+      <h2>Setup</h2>
+
+      <p>The best tool for compiling to wasm is <a href="https://github.com/kripken/emscripten">emscripten</a>. It takes LLVM bitcode - which can be generated from C/C++, and compiles that into JavaScript, which can be run on the web.</p>
+
+      <pre><code>
+        <span style="color: #65B042;">C++</span>  =>  <span style="color: #89bdff;">LLVM</span>  =>  <span style="color: #E28964;">Emscripten</span>  =>  <span style="color: #89bdff;">JS</span>
+      </code></pre>
+
+      <p>Setting up the emscripten sdk is very simple, and the <a href="https://kripken.github.io/emscripten-site/docs/getting_started/downloads.html">instructions</a> are very easy to follow. After you have installed the sdk you should now be able to run <span class="badge">emcc</span> on your command line.</p>
+      
+      <h2>Building our Code</h2>
+
+      <p>There isn't really anything special to do when compiling the C++ code into wasm.</p>
+
+      <p>As of right now there is a good amount of "glue" code required for JavaScript and compiled web asseml;y modules to speak to eachother.For a simple poker hand simulator, the needed JavaScript that emcc bbuilt was about 150kb minified.  Emscripten requires a large variety of JavaScript "glue" code to handle memory allocation, memory leaks, and a host of other problems, which is already included in the provided template. It is easier to use that than having to write it all out yourself.</p>
+
+      Comiling the c++ code to web assembly is pretty easy with emcc.
+
+      <pre><code>
+        <span style="color: #89bdff;">emcc</span> sim.cpp -O3 -s <span style="color: #65B042;">WASM</span>=<span style="color: #3387CC;">1</span> -s <span style="color: #65B042;">EXPORTED_FUNCTIONS</span>="[<span style="color: #3387CC;">'_run'</span>]" <span>-o</span> sim.js</span>
+      </code></pre>
+
+      
+
+      <ul>
+        <li>-s EXPORTED_FUNCTIONS="['_run']" tells emcc which methods we'd like to access from JavaScript. Note that these names are from the source, with a prefixed underscore. The "glue" code will make reference to these names so they can be called in JavaScript.</li>
+        <li>-s WASM=1 Specifies that we want wasm output.</li>
+        <li>-o sim.js This tells emcc to generate the wasm module and the JavaScript "glue" code to compile and instantiate the wasm so it can be used in the web environment.</li>
+      </ul>
+
+      <p>In the C++ code I've written, there is a functon called <span>run</span> which runs a texas holdem hand simulation.</p>
+
+      <span>EXPORTED_FUNCTIONS</span> 
+
+      This command will put compile the c++ code to wasm and generate the JavaScript glue code. This is required to set up the resizable ArrayBuffer that contains the linear array of bytes read and written by WebAssembly’s lowlevel memory access instructions. Without you will need to do this yourself which becomes a little bit tricky if you want to support multiple platforms.
+
+      You may run into errors likethis
+
+      failed to compile wasm module: LinkError: WebAssembly.Instance(): Import #12 module="env" function="___syscall221" error: function import requires a callable
+
+      </p>
+
+      codelab has a great guide on how to build with only this option: https://codelabs.developers.google.com/codelabs/web-assembly-intro/index.html?index=..%2F..%2Findex#2
+      Writing a standalone module without emscrpten glue JS can be a little tricky. When you compile C/C++ normally, you link with the system to provide implementations of the standard library methods your code uses.
+
+JavaScript doesn't have these methods—either not with the same signatures or names (e.g, Math.atan in JavaScript vs atan in C), or because it's conceptually different (think malloc vs JavaScript's objects and garbage collection)—so Emscripten has to provide them for you.
+
+    <code>ONLY_MY_CODE</code>
+
+      Simulating poker hands can be split into different threads using web workers. The worker code is fairly straightforward. We extend the genreated module libarry to decalre handle any calls from our c++ code and 
+
+      <pre><code>
+        <span style="color: #E28964;">let</span> Simulate;
+        <span style="color: #D6C824;">onmessage</span> = <span style="color: #E28964;">function</span>(e) {
+          <span style="color: #E28964;">const</span> mod = e.data;
+
+          Simulate(mod[<span style="color: #3387CC;">0</span>], mod[<span style="color: #3387CC;">1</span>], mod[<span style="color: #3387CC;">2</span>], mod[<span style="color: #3387CC;">3</span>], mod[<span style="color: #3387CC;">4</span>], simCount); <span style="color: #777;">// Pass the data into the C++ method</span>
+        };
+
+        <span style="color: #777;">// Overrides for the generated emcc script, module gets redifined later</span>
+        <span style="color: #E28964;">let Module</span> = {
+          <span style="color: #D6C824;">cc</span>: <span style="color: #E28964;">function</span>(data) {
+            <span style="color: #777;">// This is the method that gets called from within our c+= module</span>
+          },
+
+          <span style="color: #D6C824;">onRuntimeInitialized</span>: <span style="color: #E28964;">function</span>() {
+            <span style="color: #777;">// This corresponds to the EXPORTED_FUNCTIONS command from emcc</span>
+            Simulate = <span style="color: #89bdff;">Module</span>.<span style="color: #89bdff;">cwrap</span>(<span style="color: #65B042;">'run'</span>, <span style="color: #65B042;">'number'</span>, [<span style="color: #65B042;">'array'</span>, <span style="color: #65B042;">'array'</span>, <span style="color: #65B042;">'number'</span>, <span style="color: #65B042;">'array'</span>, <span style="color: #65B042;">'number'</span>,<span style="color: #65B042;">'number'</span>]);
+          }
+        };
+
+        <span style="color: #777;">// This loads the wasm generated glue code</span>
+        importScripts(<span style="color: #65B042;">'sim.js'</span>);
+      </code></pre>
+
+      In order to pass information back to our JavaScript worker we can use the EM_ESM c
+
+      <pre><code>
+        <span style="color: #E28964;">#include</span> <span style="color: #D6C824;">"emscripten.h"</span>
+
+        <span style="color: #777;">// This calls the JavaScript worker which in turn calls postMessage with the data back to the main thread</span>
+        <span style="color: #E28964;">EM_ASM</span>({
+          <span style="color: #89bdff;">Module</span>.<span style="color: #89bdff;">cc</span>([<span style="color: #3387CC;">$0</span>]);
+        }, totalSimulations);
+      </code></pre>
+
+      In order to use this in your code you need to include the emscripten header <span>#include <span></span>. For more information <a href="https://kripken.github.io/emscripten-site/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html#interacting-with-code-call-javascript-from-native">see here</a>.
+
+      <h2>Loading WebAssembly</h2>
+
+      <p>Since we are not using a self contained wasm module, but instead had emcc generate the javaScrept glue code for us, loading the web assembly is as easy as inclufing the generated JavaScript in our page.</p>
+
+      <p>If we using the SIDE_MODule option in emcc we could easily load out web assemlby like this</p>
+
+      <pre><code>
+        <span style="color: #E28964;">async</span> <span style="color: #E28964;">function</span> createWebAssembly(path, importObject) {
+          <span style="color: #E28964;">const</span> bytes = await window.fetch(path).<span style="color: #E28964;">then</span>(x => x.arrayBuffer());
+          <span style="color: #E28964;">return</span> <span style="color: #89bdff;">WebAssembly</span>.<span style="color: #89bdff;">instantiate</span>(bytes, importObject);
+        }
+      </code></pre>
+
+      <p>You would also need to specify an importObject: this provides the environment Web Assembly runs in as well as any other parameters to instantiation. At a minimum, you need to provide an object like this—add it at the end your script tag. For more inforamtion, <a href="https://codelabs.developers.google.com/codelabs/web-assembly-intro/index.html?index=..%2F..%2Findex#3">see here</a>.</p>
+
+      <pre><code>
+        <span style="color: #E28964;">const</span> memory = <span style="color: #E28964;">new</span> <span style="color: #89bdff;">WebAssembly</span>.<span style="color: #89bdff;">Memory</span>({initial: <span style="color: #3387CC;">256</span>, maximum: <span style="color: #3387CC;">256</span>});
+        <span style="color: #E28964;">const</span> env = {
+          <span style="color: #65B042;">'abortStackOverflow'</span>: _ => { <span style="color: #E28964;">throw</span> <span style="color: #E28964;">new</span> <span style="color: #89bdff;">Error</span>('overflow'); },
+          <span style="color: #65B042;">'table'</span>: <span style="color: #E28964;">new</span> <span style="color: #89bdff;">WebAssembly</span>.<span style="color: #89bdff;">Table</span>({initial: <span style="color: #3387CC;">0</span>, maximum: <span style="color: #3387CC;">0</span>, element: <span style="color: #65B042;">'anyfunc'</span>}),
+          <span style="color: #65B042;">'tableBase'</span>: <span style="color: #3387CC;">0</span>,
+          <span style="color: #65B042;">'memory'</span>: memory,
+          <span style="color: #65B042;">'memoryBase'</span>: <span style="color: #3387CC;">1024</span>,
+          <span style="color: #65B042;">'STACKTOP'</span>: <span style="color: #3387CC;">0</span>,
+          <span style="color: #65B042;">'STACK_MAX'</span>: memory.buffer.byteLength,
+        };
+        <span style="color: #E28964;">const</span> importObject = {env};
+      </code></pre>
+
+      <p>This environment mostly configures the memory available to Web Assembly.</p>
+
+      <h2>Conclusion</h2>
+
+      <p>WebAssembly</p> is a very exceting new technology, and working with it is extrememly simple using emscripten. However, I'm not a hige fan of the massive JavaScript glue files that are generated which provide little insight into what is actually happening. It sure does make lower the barrier for entry though. Not every project is going to suited towards WebAssembly. The performance gains in a lot cases just won't make it worth the time and effort to port. If you want to see the code from the texas holdem simulator referenced in this post, please take a look <a href="https://github.com/ChrisZieba/holdem">here</a>.</p>
+    </div>
+
+
+
+
+
+  </div>
+
+</div>
+
+  <script type="text/javascript">
+    var sc_project=9447020; 
+    var sc_invisible=1; 
+    var sc_security="3ecc64a0"; 
+    var scJsHost = (("https:" == document.location.protocol) ? "https://secure." : "http://www.");
+    document.write("<sc"+"ript type='text/javascript' src='"+scJsHost+"statcounter.com/counter/counter.js'></"+"script>");
+  </script>
+</body>
+</html>
