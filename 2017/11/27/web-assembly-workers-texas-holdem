@@ -14,6 +14,8 @@
     body {
       color: #222;
       font-family: Helvetica,Arial,serif;
+      font-size: 16px;
+      line-height: 1.5;
     }
 
     time {
@@ -29,7 +31,7 @@
       background: -o-linear-gradient(top, #373737, #212121);
       background: linear-gradient(top, #373737, #212121);
       width: 100%;
-      margin-bottom: 15px;
+      margin-bottom: 25px;
     }
 
     #header .inner {
@@ -57,13 +59,13 @@
       padding: 14px;
       -webkit-text-size-adjust: none;
       line-height: 1.4;
+      margin: 10px 0;
     }
+
     code {
       display: block;
       font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
     }
-
-
   </style>
 </head>
 <body>
@@ -83,45 +85,47 @@
   <div class="row">
     <div class="col-md-12">
       
-      <p>I recently spent a weekend to learn more about an exciting new web technology called WebAssebly, and built a <a href="http://chriszieba.com/2017/11/26/holdem">hand simulator for texas holdem</a>. I wanted to document what it's like working with WebAssembly, and walk through a project from start to finish.</p>
+      <p>I recently spent a weekend to learn more about an exciting new web technology called WebAssebly, and built a <a href="http://chriszieba.com/2017/11/26/holdem">hand simulator for texas holdem</a>. I wrote the code for the simulator in C++ and then ported it to WebAssembly for use in the browser. I wanted to document what it's like working with WebAssembly, and walk through a project from start to finish.</p>
 
       <h2>Basics</h2>
 
-      <p><strong>WebAssembly</strong> is a new binary format for executing code on the web, allowing for much faster execution times in some cases. As of right now, you can port code written in <span>C</span> and <span>C++</span> to run inside a current web browser. If you're not familiar with the concepts of WebAssembly, I would start <a href="https://developer.mozilla.org/en-US/docs/WebAssembly">here</a> for excellent resources.</p>
+      <p><strong>WebAssembly</strong> is a new binary format for executing code on the web, allowing for much faster execution times in some cases. As of right now, you can port code written in <span>C</span> and <span>C++</span> to run inside a current web browser.</p>
+
+      <p>WebAssembly is being created as an open standard to be fast, efficient, and portable. WebAssembly code can be executed at near-native speed across different platforms by taking advantage of common hardware capabilities. It is specified to be run in a safe, sandboxed execution environment. Like other web code, it will enforce the browser's same-origin and permissions policies. If you're not familiar with the concepts of WebAssembly, I would start <a href="https://developer.mozilla.org/en-US/docs/WebAssembly">here</a> for excellent resources and tutorials.</p>
 
       <h2>Setup</h2>
 
-      <p>The best tool for compiling to wasm is <a href="https://github.com/kripken/emscripten">emscripten</a>. It takes LLVM bitcode - which can be generated from C/C++, and compiles that into JavaScript, which can be run on the web.</p>
+      <p>The best tool for compiling to wasm is <a href="https://github.com/kripken/emscripten">Emscripten</a>. It takes LLVM bitcode - which can be generated from C/C++, and compiles that into JavaScript, which can be run on the web.</p>
 
       <pre><code>
-        <span style="color: #65B042;">C++</span>  =>  <span style="color: #89bdff;">LLVM</span>  =>  <span style="color: #E28964;">Emscripten</span>  =>  <span style="color: #89bdff;">JS</span>
+        <span style="color: #65B042;">C++</span>  =>  <span style="color: #89bdff;">LLVM</span>  =>  <span style="color: #E28964;">Emscripten</span>  =>  <span style="color: #D6C824;">JS</span>
       </code></pre>
 
-      <p>Setting up the emscripten sdk is very simple, and the <a href="https://kripken.github.io/emscripten-site/docs/getting_started/downloads.html">instructions</a> are very easy to follow. After you have installed the sdk you should now be able to run <span class="badge">emcc</span> on your command line.</p>
+      <p>Setting up the Emscripten sdk is very simple, and the <a href="https://kripken.github.io/emscripten-site/docs/getting_started/downloads.html">instructions</a> are very easy to follow. After you have installed the sdk you should now be able to run <span class="badge">emcc</span> on your command line.</p>
       
       <h2>Building our Code</h2>
 
-      <p>There isn't really anything special to do when compiling the C++ code into wasm.</p>
+      <p>There isn't really anything special to do when compiling the C++ code into wasm. Built-in support is available for a number of standard libraries: libc, libc++ and SDL. These will automatically be linked when you compile code that uses them (you do not even need to add -lSDL, but see below for more SDL-specific details). If your project uses other libraries, for example zlib or glib, you will need to build and link them. The normal approach is to build the libraries to bitcode and then compile library and main program bitcode together to JavaScript.</p>
 
-      <p>As of right now there is a good amount of "glue" code required for JavaScript and compiled web asseml;y modules to speak to eachother.For a simple poker hand simulator, the needed JavaScript that emcc bbuilt was about 150kb minified.  Emscripten requires a large variety of JavaScript "glue" code to handle memory allocation, memory leaks, and a host of other problems, which is already included in the provided template. It is easier to use that than having to write it all out yourself.</p>
+      <p>There is a large amount of "glue" code required for JavaScript and compiled web assemlly modules to speak to eachother. For a simple poker hand simulator, the needed JavaScript that emcc bbuilt was about 150kb minified.  Emscripten generates JavaScript that handles memory allocation, memory leaks, and a host of other problems. What we are seeing is the Emscripten generated runtime wrapper that is responsible for loading the wasm file, and supplying the supporting functionality to make the C standard library work.</p>
 
-      Comiling the c++ code to web assembly is pretty easy with emcc.
+      <p>Comiling the C++ code to web assembly is pretty easy with emcc.</p>
 
       <pre><code>
         <span style="color: #89bdff;">emcc</span> sim.cpp -O3 -s <span style="color: #65B042;">WASM</span>=<span style="color: #3387CC;">1</span> -s <span style="color: #65B042;">EXPORTED_FUNCTIONS</span>="[<span style="color: #3387CC;">'_run'</span>]" <span>-o</span> sim.js</span>
       </code></pre>
 
-      
+      <p>There are many options to use when using emcc, the above command just utilizes the most common and they're described below. </p>
 
       <ul>
-        <li>-s EXPORTED_FUNCTIONS="['_run']" tells emcc which methods we'd like to access from JavaScript. Note that these names are from the source, with a prefixed underscore. The "glue" code will make reference to these names so they can be called in JavaScript.</li>
-        <li>-s WASM=1 Specifies that we want wasm output.</li>
-        <li>-o sim.js This tells emcc to generate the wasm module and the JavaScript "glue" code to compile and instantiate the wasm so it can be used in the web environment.</li>
+        <li><strong>-s EXPORTED_FUNCTIONS="['_run']"</strong> tells emcc which methods we'd like to access from JavaScript. Note that these names are from the source, with a prefixed underscore. The "glue" code will make reference to these names so they can be called in JavaScript.</li>
+        <li><strong>-s WASM=1</strong> specifies that we want wasm output, instead of asm.js source.</li>
+        <li><strong>-o sim.js</strong> tells emcc to generate the wasm module and the JavaScript "glue" code. It also specifies the output name to use and to compile and instantiate the wasm so it can be used in the web environment.</li>
       </ul>
 
-      <p>In the C++ code I've written, there is a functon called <span>run</span> which runs a texas holdem hand simulation.</p>
+      <p>One very useful environment variable that can be used is <strong>EMCC_DEBUG</strong>. It forces the Emscripten compiler to log all of it's build steps. This is useful if you see random failures, and you want some help in figuring out what is breaking.</p>
 
-      <span>EXPORTED_FUNCTIONS</span> 
+      <p>In the C++ code I've written, there is a functon called <strong>run</strong> which runs a texas holdem hand simulation. You can see the code on GitHub <a href="https://github.com/ChrisZieba/holdem/blob/master/src/run.cpp#L32">here</a>.</p>
 
       This command will put compile the c++ code to wasm and generate the JavaScript glue code. This is required to set up the resizable ArrayBuffer that contains the linear array of bytes read and written by WebAssembly’s lowlevel memory access instructions. Without you will need to do this yourself which becomes a little bit tricky if you want to support multiple platforms.
 
@@ -140,9 +144,23 @@ JavaScript doesn't have these methods—either not with the same signatures or n
 
       Simulating poker hands can be split into different threads using web workers. The worker code is fairly straightforward. We extend the genreated module libarry to decalre handle any calls from our c++ code and 
 
+      <p>From our html page we load a new worker and keep track of them so we can send and receive messages
+
+      <pre><code>
+        <span style="color: #E28964;">const</span> MAX_WORKERS = <span style="color: #89bdff;">Math</span>.<span style="color: #89bdff;">min</span>(<span style="color: #89bdff;">navigator</span>.<span style="color: #89bdff;">hardwareConcurrency</span> || 4, 8);
+        <span style="color: #E28964;">const</span> WORKERS = [];
+
+        <span style="color: #777;">// Load the workers</span>
+        <span style="color: #E28964;">for</span> (<span style="color: #E28964;">let</span> i = <span style="color: #3387CC;">0</span>; i < MAX_WORKERS; i+=<span style="color: #3387CC;">1</span>) WORKERS.push(<span style="color: #E28964;">new</span> <span style="color: #89bdff;">Worker</span>(<span style="color: #65B042;">"worker.js"</span>));
+      </code></pre>
+
+      <p>The worker code is pretty stragihhtforward. There is a method 'cc' that is called from the C++ code to handle any returned values. Another important thing to note is that each worker must load the generated glue code from Emscripten. Communication between the main thread and the workers is done through the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Worker/postMessage">postMessage</a> API. Keep in mind that you can pass any value or JavaScript object handled by the structured clone algorithm, which includes cyclical references, so you can not pass functions.</p>
+
       <pre><code>
         <span style="color: #E28964;">let</span> Simulate;
-        <span style="color: #D6C824;">onmessage</span> = <span style="color: #E28964;">function</span>(e) {
+
+        <span style="color: #777;">// The onmessage property of the Worker interface represents an EventHandler when the message event occurs</span>
+        <span style="color: #D6C824;">onmessage</span> = (e) => {
           <span style="color: #E28964;">const</span> mod = e.data;
 
           Simulate(mod[<span style="color: #3387CC;">0</span>], mod[<span style="color: #3387CC;">1</span>], mod[<span style="color: #3387CC;">2</span>], mod[<span style="color: #3387CC;">3</span>], mod[<span style="color: #3387CC;">4</span>], simCount); <span style="color: #777;">// Pass the data into the C++ method</span>
@@ -150,11 +168,11 @@ JavaScript doesn't have these methods—either not with the same signatures or n
 
         <span style="color: #777;">// Overrides for the generated emcc script, module gets redifined later</span>
         <span style="color: #E28964;">let Module</span> = {
-          <span style="color: #D6C824;">cc</span>: <span style="color: #E28964;">function</span>(data) {
-            <span style="color: #777;">// This is the method that gets called from within our c+= module</span>
+          <span style="color: #D6C824;">cc</span>: (data) => {
+            <span style="color: #777;">// This is the method that gets called from within our C++ module</span>
           },
 
-          <span style="color: #D6C824;">onRuntimeInitialized</span>: <span style="color: #E28964;">function</span>() {
+          <span style="color: #D6C824;">onRuntimeInitialized</span>: () => {
             <span style="color: #777;">// This corresponds to the EXPORTED_FUNCTIONS command from emcc</span>
             Simulate = <span style="color: #89bdff;">Module</span>.<span style="color: #89bdff;">cwrap</span>(<span style="color: #65B042;">'run'</span>, <span style="color: #65B042;">'number'</span>, [<span style="color: #65B042;">'array'</span>, <span style="color: #65B042;">'array'</span>, <span style="color: #65B042;">'number'</span>, <span style="color: #65B042;">'array'</span>, <span style="color: #65B042;">'number'</span>,<span style="color: #65B042;">'number'</span>]);
           }
@@ -175,7 +193,7 @@ JavaScript doesn't have these methods—either not with the same signatures or n
         }, totalSimulations);
       </code></pre>
 
-      In order to use this in your code you need to include the emscripten header <span>#include <span></span>. For more information <a href="https://kripken.github.io/emscripten-site/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html#interacting-with-code-call-javascript-from-native">see here</a>.
+      In order to use this in your code you need to include the Emscripten header <span>#include <span></span>. For more information <a href="https://kripken.github.io/emscripten-site/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html#interacting-with-code-call-javascript-from-native">see here</a>.
 
       <h2>Loading WebAssembly</h2>
 
@@ -210,7 +228,7 @@ JavaScript doesn't have these methods—either not with the same signatures or n
 
       <h2>Conclusion</h2>
 
-      <p>WebAssembly</p> is a very exceting new technology, and working with it is extrememly simple using emscripten. However, I'm not a hige fan of the massive JavaScript glue files that are generated which provide little insight into what is actually happening. It sure does make lower the barrier for entry though. Not every project is going to suited towards WebAssembly. The performance gains in a lot cases just won't make it worth the time and effort to port. If you want to see the code from the texas holdem simulator referenced in this post, please take a look <a href="https://github.com/ChrisZieba/holdem">here</a>.</p>
+      <p>WebAssembly</p> is a very exceting new technology, and working with it is extrememly simple using Emscripten. However, I'm not a hige fan of the massive JavaScript glue files that are generated which provide little insight into what is actually happening. It sure does make lower the barrier for entry though. Not every project is going to suited towards WebAssembly. The performance gains in a lot cases just won't make it worth the time and effort to port. If you want to see the code from the texas holdem simulator referenced in this post, please take a look <a href="https://github.com/ChrisZieba/holdem">here</a>.</p>
     </div>
 
 
