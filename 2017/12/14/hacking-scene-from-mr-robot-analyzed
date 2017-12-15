@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Analysis of a Hacking Scene from Mr.Robot</title>
+  <meta name="description" content="WebAssembly, Web Workers, and Texas Holdem">
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+
+  <style>
+    body {
+      color: #222;
+      font-family: Helvetica,Arial,serif;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    time {
+      font-weight: 400;
+      font-style: italic;
+    }
+
+    #header {
+      background: #212121;
+      background: -moz-linear-gradient(top, #373737, #212121);
+      background: -webkit-linear-gradient(top, #373737, #212121);
+      background: -ms-linear-gradient(top, #373737, #212121);
+      background: -o-linear-gradient(top, #373737, #212121);
+      background: linear-gradient(top, #373737, #212121);
+      width: 100%;
+      margin-bottom: 25px;
+    }
+
+    #header .inner {
+      padding-top: 50px;
+      padding-bottom: 30px;
+      position: relative;
+    }
+
+    #footer {
+      margin: 35px 0;
+    }
+
+    #footer p {
+      font-size: 14px;
+      color: #878787;
+      text-align: center;
+    }
+
+    h1.project-title {
+      margin: 0;
+      color: #FFF;
+      font-size: 36px;
+      font-weight: 700;
+      text-shadow: #111 0px 0px 10px;
+      text-align: center;
+    }
+
+    .post {
+      color: #999;
+      text-align: center;
+    }
+
+    pre {
+      display: block;
+      color: #FFF;
+      background-color: #28323f;
+      padding: 14px;
+      -webkit-text-size-adjust: none;
+      line-height: 1.4;
+      margin: 10px 0;
+    }
+
+    code {
+      display: block;
+      font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+    }
+
+    blockquote {
+      background: #f9f9f9;
+      border-left: 10px solid #ccc;
+      margin: 2px 10px;
+      padding: 2px 10px;
+      quotes: "\201C""\201D""\2018""\2019";
+      color: #949494;
+    }
+    blockquote:before {
+      color: #ccc;
+      content: open-quote;
+      font-size: 4em;
+      line-height: 0.1em;
+      margin-right: 0.25em;
+      vertical-align: -0.4em;
+    }
+    blockquote p {
+      display: inline;
+      font-size: 30px;
+    }
+
+    img {
+      margin: 20px 0;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    ul {
+      margin: 15px 0;
+    }
+
+    ul li {
+      margin: 5px 0;
+    }
+
+    .lyrics {
+      font-family: serif;
+      font-style: italic;
+      color: #755E5E;
+      line-height: 1.4;
+      font-size: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<div id="header" class="outer">
+  <div class="container inner">
+    <div class="row">
+      <div class="col-md-12">
+        <h1 class="project-title">Analysis of a Hacking Scene from Mr.Robot</h1>
+        <p class="post">Posted <time>December 14 2017</time> by <a href="http://chriszieba.com" title="Chris Zieba">Chris Zieba</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="alert alert-danger" style="font-size:20px;"><strong>Spoilers!</strong> If you haven't seen the season 3 finale of Mr. Robot, there are major spoilers below. Also, all of the information you see here is meant for educational purposes only, and should not be used to try and brute force someone's passphrase.</div>
+
+      <p>If you watched last night's episode of <a href="http://www.usanetwork.com/mrrobot">Mr. Robot</a>, you witnessed Elliot perform some hacking magic to decrypt <a href="http://mrrobot.wikia.com/wiki/Romero">Romero's</a> keylogger files. The following is an explanation of what actually is happening in that scene, and what assumptions the writers of Mr. Robot are making.</p>
+
+      <p>The scene starts off with <a href="http://mrrobot.wikia.com/wiki/Dominique_DiPierro">Agent DiPierro</a> logging into an FBI computer from <a href="http://mrrobot.wikia.com/wiki/Santiago">Agent Santiego's</a> car. Next, she hands over access to Elliot who in a minute or two has completey decrypted Romero's keylogger files. A good place to start is by explaining <strong>what is a keylogger?</strong> A keylogger is just a hardware device or a software program that records the real time activity of a computer user including the keys they press. Romero had one running during the initial Evil Corp. hack, which could have the private keys to undo it.</p>
+
+      <div style="margin-top: 40px; margin-bottom: 40px" class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-6">
+          <blockquote><p>The FBI had Romero's key logger files but he encrypted them with a password. Thing is .. the FBI didn't know Romero, I do.</p></blockquote>
+        </div>
+        <div class="col-md-3"></div>
+      </div>
+
+      <p>When referring to a computer hard drive, a partition is a section of the hard drive that is separated from other segments. Partitions help enable users to divide a computer hard drive into different drives or different portions. The steps to encrypt one of these partitions is pretty simple. Romero would have most likely used the program <a href="https://linux.die.net/man/8/cryptsetup">cryptsetup</a> to setup the cryptographic volume, and a quick overview of how this could have been is below.</p>
+
+      <ul>
+        <li><strong>Copy data</strong>
+          <p>The first step is to copy the data from somewhere on disk. The reason is because you can't change an existing partition into an encrypted one. First the data is copied somewhere, then you create the encrypted partition, and copy the data back to it.</p>
+        </li>
+
+        <li><strong>Format the partition with LUKS</strong>
+          <p>LUKS is the standard for Linux hard disk encryption, and encrypts entire block devices and is therefore well-suited for protecting the contents of mobile devices such as removable storage media (usb pen) or laptop disk drives. It does not only facilitate compatibility among distributions, but also provides secure management of multiple user passwords. If you have a partition that is ready to use, you can prepare it with "cryptsetup luksFormat". <span style="font-style: italic;"><strong>You'll then be asked to set a password for use with the encryption.</strong></span> This was where Romero set the password that Elliot brute forces using song lyrics.</p>
+          <code style="background-color: #f0f0f0; margin: 15px 0; padding: 10px">
+            <div>cryptsetup -y -v luksFormat /media/keyintercept_1</div>
+
+            <div><strong>WARNING!</strong></div>
+            <div>========</div>
+            <div>This will overwrite data on /media/keyintercept_1 irrevocably.</div>
+             
+            <div>Are you sure? (Type uppercase yes): YES</div>
+            <div>Enter LUKS passphrase: </div>
+            <div>Verify passphrase: </div>
+            <div>Command successful.</div>
+          </code>
+        </li>
+
+        <li><strong>Format the partition</strong>
+          <p>The partition is now available, but needs to be formatted with the normal filesystem tools to be usable. You can use a tool like <strong>mke2fs</strong> to create the new file system. Once the file system is created you can mount it, which just means placing access to the file system contained within onto your root file system structure. Effectively giving the files a location.</p>
+        </li>
+
+        <li><strong>Copy data to the partition</strong>
+          <div>The data copied in the first step can now be placed on the partition, where it is fully encypted and password protected.</div>
+        </li>
+      </ul>
+
+      <p>The next thing we see is Elliot running a python program from a shell. <a href="https://www.python.org/">Python</a> is a general purpose programming language, and a shell is just an interface to the operating systems services.</p>
+      <img src="mr_robot_2.jpg" />
+
+      <p>The command Elliot runs is pretty straighfoward. The important parts are that he has a script called "getlyrics.py" that he executes, and he passes in the name of a text file called "artists.txt" which most likely is a file with the names of artists Romero liked.</p>
+
+      <pre><code># <span style="color: #65B042;">python</span> <span style="color: #E28964;">getlyrics.py</span> -m artist -i artists.txt -o <span style="color:#ddd;">lyrics.txt</span></code></pre>
+
+      <p>We can see that Elliot is running <a href="https://www.kali.org/">Kali linux</a>, but it's unclear if the FBI machine he is using runs Kali, or if he's logged into a remote machine. <span style="font-style: italic;"><strong>Why is this important?</strong></span> In order to run the python program "getlyrics.py" the system Elliot is using needs Python installed, along with other packages like <a href="https://pypi.python.org/pypi/PyLyrics/">PyLyrics</a>, (which downloads song lyrics) and the script he executes "getlyrics.py" would also need to be present on the machine filesystem (or accessible from somewhere).</p>
+
+      <p>The more likely scenario would be that Elliot SSH'd into a remote server that he controls, where he has everything he needs installed already. In order to login to said server Elliot would also need to have his private key (assuming he disabled password logins, which is highly likey for a super hacker like Elliot). <a href="https://www.ssh.com/ssh/">Secure Shell</a> (SSH) is a cryptographic network protocol for operating network services securely over an unsecured network, and a private key can be thought of as a really long password. So long, that it's extremely difficult to brute force. It's also possible Elliot stored the scripts and files he needs on a public server somewhere (or thumb drive) and just downloaded them as needed.</p>
+
+      <p>The scene does not show that Elliot logged into a remote machine so we'll just assume he's running the commands on the FBI machine locally, and everything is installed and ready to go. After Elliot executes the script, we see that some songs are being downloaded. <span style="font-style: italic;"><strong>What exactly is happening here?</strong></span> We here Elliot mention that he "knows Romero". This is impying that Elliot knows how Romero might have picked a password for his encypted files. We can assume the code in the script Elliot runs is downloading song lyrics from artists Romero listened to. <span style="font-style: italic;"><strong>What might the code for something like this look like?</strong></span> It's actually pretty trivial.</p>
+
+      <pre><code>
+  <span style="color:#777"># PyLyrics is a python module to get Lyrics of songs from lyrics.wikia.com</span>
+  <span style="color:#777"># It has support for getting albums of a singer and songs from an album from which lyrics can be accessed</span>
+  <span style="color:#B64D4D">from</span> PyLyrics <span style="color:#B64D4D">import *</span>
+
+  <span style="color:#777"># Read in the file that has a list of artists Romero liked</span>
+  artists = <span style="color:#5290DD">open</span>(sys.argv[4], <span style="color:#A29221">'r'</span>)
+
+  <span style="color:#777"># This is the output file using the argument from the command line</span>
+  <span style="color:#777"># All the lyrics will be written to this file, and is later</span>
+  <span style="color:#777"># used as a list of passwords to test against the encypted file password</span>
+  lyrics = <span style="color:#5290DD">open</span>(sys.argv[6], <span style="color:#A29221">'w'</span>)
+
+  <span style="color:#777"># For every artist, get a list of tracks and download the lyrics</span>
+  <span style="color:#B64D4D">for</span> artist <span style="color:#B64D4D">in</span> artists:
+    albums = PyLyrics.getAlbums(<span style="color:#A29221">singer</span>=artist)
+
+    <span style="color:#777"># Loop through every album and get the tracks</span>
+    <span style="color:#B64D4D">for</span> album <span style="color:#B64D4D">in</span> albums:
+      tracks = album.tracks()
+      <span style="color:#B64D4D">for</span> track <span style="color:#B64D4D">in</span> tracks:
+        <span style="color:#777">We download the lyrics and write the output to our lyrics file</span>
+        lyrics.write(track.getLyrics())
+
+  artists.close()
+  lyrics.close()
+      </code></pre>
+
+      <p>After the code above is done executing, we're left with a file "lyrics.txt" which has a bunch of song lyrics in it. A portion of the output would look like something below.</p>
+
+      <div class="lyrics">
+        <div>And Nixon talking about don't worry (don't worry, worry, worry, worry)</div>
+        <div>But they don't know</div>
+        <div>There can be no show</div>
+        <div><strong>And if there's hell below</strong></div>
+        <div><strong>We're all gonna go (gonna go, gonna go, gonna go, go)</strong></div>
+        <div>Everybody praying</div>
+        <div>And everybody saying</div>
+        <div>But when come time to do</div>
+        <div>Everybody's laying</div>
+      </div>
+
+      <p>Next we see Elliot brute force the LUKS encypted drive with a bunch of passwords. It appears that Elliot is using a program called <a href="https://github.com/glv2/bruteforce-luks">bruteforce-luks</a>. This program must be compiled and configured first. If Elliot is running directly from the FBI machine (and not a remote server) the program would have either been compiled before or he would have had to do that once he got access from DiPierro. Either way, we don't see this step and can just assume it's already been compiled and ready for use when Elliot starts using the machine.</p>
+
+      <img src="mr_robot_1.jpg" />
+
+      <p>We see that Elliot is running "bruteforce-luks" in dictionary mode. This means the program tries to decrypt at least one of the key slots by trying all the passwords contained in a file. <strong>The file must have one password per line.</strong> We can see in the episode that the password found is "And if there's hell below We're all gonna go". What this tells us is that the program Elliot executes would also most likely need to do some processing to generate a full lyric on each line. We can also see from our lyrics output that the lyric containing the password has parenthises at the end inclusding some extra content (gonna go, gonna go, gonna go, go) . This is not part of the password so the program would also need to remove extra tokens like this, and also combine multiple lyrics per line. </p>
+
+      <img src="mr_robot_3.jpg" />
+
+      <p>Brute forcing a password this way is definitley possible, but using song lyrics is pretty unreliable as you can see. Since the program to bruce force uses each line of our dictionary to test the LUKS volume, the lyric has to be exactly right. The output file with lyrics would have needed a line with the following lyrics exactly. That means no extra spaces, apostraphes, commas, brackets, missing letters, etc. If Romero had used "there is" instead of "there's" we would not find the password; if Romero used "going to go" instead of "gonna go" a password would not have been found. If the lyrics website (lyrics.wikia.com) had returned a lyric with an extra space somewhere, the password would not have been found. There are so many places this could fail that it almost isn't worth the effort, but when he fate of undoing 5/9 relies on it, it's definelty worth a shot!</p>
+
+      <p>Once Elliot gets the password, decrypting Romero's files becomes pretty trivial. All he does is use the same program from before (cryptsetep) and use the password found to decrypt it.</p>
+
+      <pre><code>
+        # <span style="color: #65B042;">cryptsetup</span> luksOpen <span style="color: #E28964;">~/keyintercept_1.raw</span> keyintercept
+      </code></pre>
+
+      <p>The next step is to open the partition and set up a mapping name. It's here where Elliot will have to enter the passphrase to decrypt the partition. The mapped partition is now available in <strong>~/keyintercept_1.raw/keyintercept</strong> but it isn’t mounted. The last step is create a mount point and to mount the mapped partition. Elliot can now open the files and view them directly in plain text. In the episode, it looks like Elliot had already mounted the drive, and uses <a href="http://man7.org/linux/man-pages/man8/lsblk.8.html">lsblk</a> to get information about it. <strong>lsblk</strong> lists information about all available or the specified block devices. The command prints all block devices in a tree-like format by default. It's this command that shows Elliot where the exact location of the data he wants is.</p>
+
+      <div style="margin-top: 30px; margin-bottom: 30px" class="row">
+        <div class="col-md-6">
+          <blockquote>This is it, everything that was typed on those machines at the arcade on the night of the hack.</blockquote>
+        </div>
+        <div class="col-md-6">
+          <p>Using a program called bruteforce-luks, Elliot is able to use the lyrics file he generated to bruce force a password and decypt Romero's files. He performs these steps in what apears to be a minute on the show, but this would definitly take some time to setup at least. We don't see him generate the artists file, or write the code for retriving lyrics, or install any software. If all those things were done and setup perfectly for Elliot when starting, then a minute or two for the hack seams reasonable.</p>
+        </div>
+      </div>
+
+      <p>In conclusion, this is definitly a plausible hack, and it's fun to see how the writers come up with these scenarios. In reality, trying to find the password the way Elliot did would be pretty hit or miss, and it would take some time setting up the environment (installing programs, writing the code, etc.). The key piece of information to take away from this hack is that it all comes down to Elliot knowing that Romero used a song lyric in his password. He also needed to know which artists specifically, and that his password would be an exact match to a lyric from a song by that artist.</p>
+
+    </div>
+
+  </div>
+
+  <div id="footer"></div>
+</div>
+
+<script>
+  var sc_project=9447020; 
+  var sc_invisible=1; 
+  var sc_security="3ecc64a0"; 
+  var scJsHost = (("https:" == document.location.protocol) ? "https://secure." : "http://www.");
+  document.write("<sc"+"ript type='text/javascript' src='"+scJsHost+"statcounter.com/counter/counter.js'></"+"script>");
+</script>
+</body>
+</html>
